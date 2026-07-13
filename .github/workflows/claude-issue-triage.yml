@@ -1,0 +1,75 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  triage:
+    if: |
+      github.event.action == 'opened' ||
+      (github.event.action == 'edited' && github.event.changes.body != null)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Issue Triage
+        id: claude-triage
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowed-tools "Bash(gh label list:*),Bash(gh label create:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh issue view:*)"'
+          prompt: |
+            Analiza el issue #${{ github.event.issue.number }} del repositorio
+            ${{ github.repository }} (un juego de Tetris en JavaScript vanilla,
+            ver CLAUDE.md para la arquitectura del código: game.js, index.html,
+            style.css).
+
+            Pasos:
+
+            1. Lee el issue completo con:
+               gh issue view ${{ github.event.issue.number }} --repo ${{ github.repository }}
+
+            2. Lista las labels existentes del repositorio con:
+               gh label list --repo ${{ github.repository }}
+               Asigna las labels que apliquen (tipo: bug, enhancement, question, etc.;
+               área del juego; prioridad si es evidente) usando:
+               gh issue edit ${{ github.event.issue.number }} --repo ${{ github.repository }} --add-label "<label>"
+               Si ninguna label existente encaja bien, crea una nueva label adecuada con
+               gh label create antes de asignarla. No elimines labels existentes del issue.
+
+            3. Publica un comentario de diagnóstico en el issue con:
+               gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "..."
+               usando este formato en español (Markdown), pensado para servir de base
+               a la implementación posterior de la solución:
+
+               ## Diagnóstico
+
+               **Resumen del problema**
+               (1-3 frases resumiendo lo que reporta el issue)
+
+               **Causa probable / hipótesis**
+               (explicación técnica de la causa más probable, basada en el código real)
+
+               **Archivos afectados**
+               (rutas concretas del repo, ej. game.js, con funciones o secciones relevantes
+               si se pueden identificar)
+
+               **Enfoque sugerido para la solución**
+               (pasos de alto nivel, sin implementar el código todavía)
+
+               **Riesgos / consideraciones**
+               (efectos secundarios, mecánicas del juego que podrían verse afectadas, etc.)
+
+            No modifiques el código del juego ni abras un pull request: esta tarea es
+            solo de triage y diagnóstico.
