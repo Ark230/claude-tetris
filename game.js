@@ -30,6 +30,15 @@ const LINE_SCORES = [0, 100, 300, 500, 800];
 
 const GRID_COLORS = { dark: '#22222e', light: '#d8d8e2' };
 const THEME_STORAGE_KEY = 'tetris-theme';
+const POWERUPS = [
+  { id: 'bomba', name: 'Bomba', key: '1', icon: '💣' },
+  { id: 'rayo', name: 'Rayo', key: '2', icon: '⚡' },
+  { id: 'tinte', name: 'Tinte', key: '3', icon: '🎨' },
+  { id: 'gravedad', name: 'Gravedad', key: '4', icon: '🪨' },
+  { id: 'congelar', name: 'Congelar', key: '5', icon: '❄️' },
+];
+const FREEZE_MS = 5000;
+const POWERUP_EVERY = 1;
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -46,6 +55,7 @@ const themeToggle = document.getElementById('theme-toggle');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 let theme = 'dark';
+let inventory, frozenUntil, lastPowerupMilestone;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -114,6 +124,99 @@ function clearLines() {
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
+
+    const milestone = Math.floor(lines / POWERUP_EVERY);
+    while (lastPowerupMilestone < milestone) {
+      lastPowerupMilestone++;
+      grantRandomPowerup();
+    }
+  }
+}
+
+function grantRandomPowerup() {
+  const pu = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
+  inventory[pu.id]++;
+  updateInventory();
+}
+
+function pieceCenter() {
+  const cx = Math.min(COLS - 1, Math.max(0, current.x + Math.floor(current.shape[0].length / 2)));
+  const cy = Math.min(ROWS - 1, Math.max(0, current.y + Math.floor(current.shape.length / 2)));
+  return { cx, cy };
+}
+
+function compactBoard() {
+  for (let c = 0; c < COLS; c++) {
+    const col = [];
+    for (let r = 0; r < ROWS; r++) if (board[r][c]) col.push(board[r][c]);
+    for (let r = ROWS - 1; r >= 0; r--) {
+      board[r][c] = col.length ? col.pop() : 0;
+    }
+  }
+}
+
+function applyBomba() {
+  const { cx, cy } = pieceCenter();
+  for (let r = cy - 1; r <= cy + 1; r++) {
+    for (let c = cx - 1; c <= cx + 1; c++) {
+      if (r >= 0 && r < ROWS && c >= 0 && c < COLS) board[r][c] = 0;
+    }
+  }
+}
+
+function applyRayo() {
+  const { cx, cy } = pieceCenter();
+  for (let c = 0; c < COLS; c++) board[cy][c] = 0;
+  for (let r = 0; r < ROWS; r++) board[r][cx] = 0;
+}
+
+function applyTinte() {
+  const counts = new Array(COLORS.length).fill(0);
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (board[r][c]) counts[board[r][c]]++;
+  let bestColor = 0, bestCount = 0;
+  for (let i = 1; i < counts.length; i++) {
+    if (counts[i] > bestCount) { bestCount = counts[i]; bestColor = i; }
+  }
+  if (bestColor) {
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++)
+        if (board[r][c] === bestColor) board[r][c] = 0;
+    compactBoard();
+  }
+}
+
+function applyGravedad() {
+  compactBoard();
+}
+
+function applyCongelar() {
+  frozenUntil = performance.now() + FREEZE_MS;
+}
+
+function activatePowerup(id) {
+  if (paused || gameOver) return;
+  if (!inventory[id]) return;
+  inventory[id]--;
+  switch (id) {
+    case 'bomba': applyBomba(); break;
+    case 'rayo': applyRayo(); break;
+    case 'tinte': applyTinte(); break;
+    case 'gravedad': applyGravedad(); break;
+    case 'congelar': applyCongelar(); break;
+  }
+  if (id !== 'congelar') clearLines();
+  updateInventory();
+  draw();
+}
+
+function updateInventory() {
+  for (const pu of POWERUPS) {
+    const countEl = document.getElementById(`pu-${pu.id}-count`);
+    const rowEl = document.getElementById(`pu-${pu.id}`);
+    if (countEl) countEl.textContent = inventory[pu.id];
+    if (rowEl) rowEl.classList.toggle('pu-empty', !inventory[pu.id]);
   }
 }
 
@@ -248,6 +351,11 @@ function togglePause() {
 function loop(ts) {
   const dt = ts - lastTime;
   lastTime = ts;
+  if (ts < frozenUntil) {
+    draw();
+    animId = requestAnimationFrame(loop);
+    return;
+  }
   dropAccum += dt;
   if (dropAccum >= dropInterval) {
     dropAccum = 0;
@@ -298,9 +406,13 @@ function init() {
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
+  inventory = { bomba: 0, rayo: 0, tinte: 0, gravedad: 0, congelar: 0 };
+  frozenUntil = 0;
+  lastPowerupMilestone = 0;
   next = randomPiece();
   spawn();
   updateHUD();
+  updateInventory();
   overlay.classList.add('hidden');
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
@@ -326,6 +438,21 @@ document.addEventListener('keydown', e => {
     case 'Space':
       e.preventDefault();
       hardDrop();
+      break;
+    case 'Digit1':
+      activatePowerup('bomba');
+      break;
+    case 'Digit2':
+      activatePowerup('rayo');
+      break;
+    case 'Digit3':
+      activatePowerup('tinte');
+      break;
+    case 'Digit4':
+      activatePowerup('gravedad');
+      break;
+    case 'Digit5':
+      activatePowerup('congelar');
       break;
   }
   updateHUD();
