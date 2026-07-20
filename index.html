@@ -62,6 +62,22 @@
             <li><kbd>1</kbd>–<kbd>5</kbd> power-ups</li>
           </ul>
         </div>
+
+        <div class="panel-section">
+          <span class="label">RECORDS</span>
+          <table class="highscores" id="highscores-table">
+            <thead>
+              <tr><th>#</th><th>Nombre</th><th>Pts</th><th>Líneas</th><th>Combo</th></tr>
+            </thead>
+            <tbody id="highscores-body"></tbody>
+          </table>
+          <p class="highscores-empty" id="highscores-empty">Sin récords aún</p>
+          <div class="highscores-bests">
+            <span>Mejor combo: <strong id="best-combo-ever">0</strong></span>
+            <span>Máx. líneas: <strong id="best-lines-ever">0</strong></span>
+          </div>
+          <button id="reset-scores-btn" class="secondary-btn">Resetear records</button>
+        </div>
       </aside>
     </div>
 
@@ -69,6 +85,25 @@
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
+
+        <div id="highscore-entry" class="highscore-entry hidden">
+          <label for="player-name-input">¡Nuevo récord! Introduce tu nombre:</label>
+          <div class="highscore-entry-row">
+            <input type="text" id="player-name-input" maxlength="12" placeholder="Nombre" autocomplete="off" />
+            <button id="save-score-btn">Guardar</button>
+          </div>
+        </div>
+
+        <div class="overlay-highscores">
+          <span class="label">TOP 5</span>
+          <table class="highscores" id="overlay-highscores-table">
+            <thead>
+              <tr><th>#</th><th>Nombre</th><th>Pts</th><th>Líneas</th><th>Combo</th></tr>
+            </thead>
+            <tbody id="overlay-highscores-body"></tbody>
+          </table>
+        </div>
+
         <button id="restart-btn">Reiniciar</button>
       </div>
     </div>

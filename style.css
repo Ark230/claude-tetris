@@ -175,6 +175,115 @@ kbd {
   color: #555570;
 }
 
+/* ---- Highscores ---- */
+.highscores {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.highscores th,
+.highscores td {
+  padding: 2px 4px;
+  text-align: left;
+  color: var(--fg);
+}
+
+.highscores th {
+  color: var(--label);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+
+.highscores tr.highscore-highlight td {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.highscores-empty {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.highscores-empty.hidden {
+  display: none;
+}
+
+.highscores-bests {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.highscores-bests strong {
+  color: var(--accent);
+}
+
+.secondary-btn {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.secondary-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ---- Highscore entry (overlay) ---- */
+.highscore-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--fg);
+}
+
+.highscore-entry.hidden {
+  display: none;
+}
+
+.highscore-entry-row {
+  display: flex;
+  gap: 6px;
+}
+
+#player-name-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  color: var(--fg);
+  font-size: 13px;
+}
+
+#save-score-btn {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.overlay-highscores {
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
 /* ---- Overlay ---- */
 .overlay {
   position: absolute;
