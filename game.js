@@ -90,11 +90,17 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
 const skinSelect = document.getElementById('skin-select');
+const resumeBtn = document.getElementById('resume-btn');
+const pauseRestartBtn = document.getElementById('pause-restart-btn');
+const toggleControlsBtn = document.getElementById('toggle-controls-btn');
+const pauseControlsList = document.getElementById('pause-controls-list');
+const startLevelInput = document.getElementById('start-level-input');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 let theme = 'dark';
 let skin = 'retro';
 let inventory, frozenUntil, lastPowerupMilestone;
+let startLevel = 1;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -424,6 +430,7 @@ function drawNext() {
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
+  overlay.dataset.mode = 'gameover';
   overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
   overlay.classList.remove('hidden');
@@ -433,12 +440,15 @@ function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    overlay.classList.add('hidden');
     lastTime = performance.now();
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
+    overlay.dataset.mode = 'pause';
     overlayTitle.textContent = 'PAUSA';
     overlayScore.textContent = '';
+    pauseControlsList.classList.add('hidden');
     overlay.classList.remove('hidden');
   }
 }
@@ -526,15 +536,15 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  level = startLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
   dropAccum = 0;
   lastTime = performance.now();
   inventory = { bomba: 0, rayo: 0, tinte: 0, gravedad: 0, congelar: 0 };
   frozenUntil = 0;
-  lastPowerupMilestone = 0;
+  lastPowerupMilestone = Math.floor(((level - 1) * 10) / POWERUP_EVERY);
   next = randomPiece();
   spawn();
   updateHUD();
@@ -546,6 +556,11 @@ function init() {
 
 document.addEventListener('keydown', e => {
   if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'Escape') {
+    if (gameOver) return;
+    togglePause();
+    return;
+  }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
@@ -585,6 +600,20 @@ document.addEventListener('keydown', e => {
 });
 
 restartBtn.addEventListener('click', init);
+resumeBtn.addEventListener('click', togglePause);
+pauseRestartBtn.addEventListener('click', init);
+
+toggleControlsBtn.addEventListener('click', () => {
+  pauseControlsList.classList.toggle('hidden');
+});
+
+startLevelInput.addEventListener('change', () => {
+  let v = parseInt(startLevelInput.value, 10);
+  if (!Number.isFinite(v) || v < 1) v = 1;
+  if (v > 20) v = 20;
+  startLevelInput.value = v;
+  startLevel = v;
+});
 
 initTheme();
 initSkin();
